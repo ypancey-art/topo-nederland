@@ -305,14 +305,6 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
             </button>
           </div>
         </div>
-        <div class="row">
-          <span class="label" style="margin:0">Aantal vragen</span>
-          <div class="seg" id="seg" role="group" aria-label="Aantal vragen">
-            <button type="button" data-n="10" aria-pressed="true">10</button>
-            <button type="button" data-n="20" aria-pressed="false">20</button>
-            <button type="button" data-n="all" aria-pressed="false">Alles</button>
-          </div>
-        </div>
         <div id="hist-wrap" hidden>
           <div class="row"><p class="label" style="margin:0">Eerdere rondes</p><button type="button" class="link" id="hclear">Wissen</button></div>
           <ul class="hist" id="hist"></ul>
@@ -699,7 +691,6 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   function show(name) { screens.forEach(function (s) { $("#s-" + s).hidden = s !== name; }); $("#panel").scrollTop = 0; }
 
   var sel = { prov: true, cap: false, water: false, lake: false, randstad: false, gld: false };
-  var count = "10";
   var chipsEl = $("#chips");
   TOPICS.forEach(function (t) {
     var n = ITEMS.filter(function (i) { return i.topic === t.id; }).length;
@@ -721,24 +712,10 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   function updateModes() {
     var none = selTopics().length === 0;
     document.querySelectorAll(".mode").forEach(function (m) { m.disabled = none; });
-    var hint = document.getElementById("n-hint");
-    if (!hint) {
-      hint = document.createElement("small");
-      hint.id = "n-hint";
-      hint.style.cssText = "color:var(--muted);font-size:12px;font-weight:700;margin-left:8px;white-space:nowrap";
-      document.getElementById("seg").insertAdjacentElement("afterend", hint);
-    }
-    var poolSize = ITEMS.filter(function (i) { return sel[i.topic]; }).length;
-    var n = count === "all" ? poolSize : Math.min(parseInt(count, 10), poolSize);
-    hint.textContent = none ? "" : "→ " + n + " vragen";
+
   }
   updateModes();
-  $("#seg").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
-    count = b.dataset.n;
-    document.querySelectorAll("#seg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
-    updateModes();
-  });
+
   document.querySelectorAll(".mode").forEach(function (m) {
     m.onclick = function () {
       var mode = m.dataset.mode;
@@ -810,7 +787,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     var pool = ITEMS.filter(function (i) { return sel[i.topic]; });
     var queue;
     if (items) queue = shuffle(items);
-    else queue = pickWeighted(pool, count === "all" ? pool.length : Math.min(parseInt(count, 10), pool.length));
+    else queue = pickWeighted(pool, pool.length);
     S = { mode: mode, queue: queue, i: 0, good: 0, missed: [], cur: null, done: false, tries: 0, fromFix: !!items };
     labelsOn = false;
     setAreasExplore({});
