@@ -132,6 +132,10 @@ svg#map.panning { cursor: grabbing; }
 .label { margin: 0 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .stack { display: grid; gap: 14px; }
 
+.lvl { display: grid; gap: 2px; }
+.lvl h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; }
+.lvl .back { justify-self: start; padding: 2px 0; margin-bottom: 4px; text-decoration: none; font-size: 14px; color: var(--accent); }
+.lvl .back[hidden], #chips-wrap[hidden] { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
 .chip small { color: var(--muted); font-weight: 700; font-size: 12px; }
@@ -288,7 +292,12 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     <section class="panel" id="panel">
       <!-- instellen -->
       <div class="screen stack" id="s-setup">
-        <div>
+        <div class="lvl">
+          <button type="button" class="link back" id="lback" hidden>&larr; Nederland</button>
+          <h2 id="ltitle">Nederland</h2>
+          <p class="sub" id="lsub">Tik op een provincie op de kaart om die te openen.</p>
+        </div>
+        <div id="chips-wrap">
           <p class="label">Wat wil je oefenen?</p>
           <div class="chips" id="chips"></div>
         </div>
@@ -713,7 +722,12 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
 
   var sel = { prov: true, cap: false, water: false, lake: false, randstad: false, gld: false, zh: false, fl: false, ov: false, dr: false, fr: false, gr: false, nb: false, nh: false, zl: false, lb: false, ut: false };
   var chipsEl = $("#chips");
+  var NL_TOPICS = ["prov", "cap", "water", "lake", "randstad"];
+  var PROV2T = {};
+  D.provinces.forEach(function (p) { TOPICS.forEach(function (t) { if (t.label === p.name && D.views[t.id]) PROV2T[p.id] = t.id; }); });
+  var level = null, nlTopic = "prov";
   TOPICS.forEach(function (t) {
+    if (NL_TOPICS.indexOf(t.id) < 0) return;
     var n = ITEMS.filter(function (i) { return i.topics.indexOf(t.id) >= 0; }).length;
     var b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.dataset.t = t.id;
@@ -721,7 +735,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     b.innerHTML = t.label + " <small>" + n + "</small>";
     b.onclick = function () {
       TOPICS.forEach(function (u) { sel[u.id] = false; });
-      sel[t.id] = true;
+      sel[t.id] = true; nlTopic = t.id;
       chipsEl.querySelectorAll(".chip").forEach(function (c) {
         c.setAttribute("aria-pressed", sel[c.dataset.t] ? "true" : "false");
       });
@@ -736,6 +750,33 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     setAreasExplore(selAreas());
   }
   updateModes();
+
+  function provOf(tid) { for (var k in PROV2T) if (PROV2T[k] === tid) return k; return null; }
+  function setSel(tid) { TOPICS.forEach(function (u) { sel[u.id] = false; }); sel[tid] = true; }
+  function enterSetup() {
+    clearMarks(); setDots({}, null);
+    svg.setAttribute("data-hit", "prov");
+    $("#lback").hidden = !level;
+    $("#chips-wrap").hidden = !!level;
+    if (level) {
+      var t = TOPICS.filter(function (u) { return u.id === level; })[0];
+      var n = ITEMS.filter(function (i) { return i.topics.indexOf(level) >= 0; }).length;
+      $("#ltitle").textContent = t.label;
+      $("#lsub").textContent = n + " plaatsen, gebieden en wateren. Kies hieronder een spel.";
+      mark(provOf(level), "target"); svg.classList.add("dim");
+      fitBox(D.views[level]);
+    } else {
+      $("#ltitle").textContent = "Nederland";
+      $("#lsub").textContent = "Tik op een provincie op de kaart om die te openen.";
+      chipsEl.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", sel[c.dataset.t] ? "true" : "false"); });
+      resetView();
+    }
+    updateModes();
+    show("setup");
+  }
+  function openProvince(tid) { level = tid; setSel(tid); enterSetup(); }
+  function openNL() { level = null; setSel(nlTopic); enterSetup(); }
+  $("#lback").onclick = openNL;
 
   document.querySelectorAll(".mode").forEach(function (m) {
     m.onclick = function () {
@@ -795,9 +836,10 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
       $("#xinfo").innerHTML = "<b>" + it.name + "</b><span>" + KIND_NL[it.kind] + extra + "</span>";
       return;
     }
+    if (!$("#s-setup").hidden) { if (id && PROV2T[id] && PROV2T[id] !== level) openProvince(PROV2T[id]); return; }
     if (S && S.mode === "find" && !S.done) pick(id);
   });
-  $("#xdone").onclick = function () { exploring = false; clearMarks(); setDots({}, null); setAreasExplore(selAreas()); svg.setAttribute("data-hit", ""); labelsOn = false; showLabels({}); show("setup"); resetView(); };
+  $("#xdone").onclick = function () { exploring = false; clearMarks(); setDots({}, null); setAreasExplore(selAreas()); labelsOn = false; showLabels({}); enterSetup(); };
 
   /* ---------- spelen ---------- */
   var S = null, timer = null;
@@ -916,7 +958,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   $("#bnext").onclick = function () { if (!S || !S.done) return; clearTimeout(timer); S.i++; next(); };
   $("#bstop").onclick = function () { clearTimeout(timer); S = null; leaveGame(); };
 
-  function leaveGame() { renderHist(); clearMarks(); setDots({}, null); setAreasExplore(selAreas()); svg.setAttribute("data-hit", ""); show("setup"); resetView(); }
+  function leaveGame() { renderHist(); enterSetup(); }
 
   /* ---------- resultaat ---------- */
   function finish() {
@@ -945,9 +987,8 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   });
 
   /* ---------- start ---------- */
-  show("setup");
   renderHist();
-  setAreasExplore(selAreas());
   applyView();
+  enterSetup();
 })();
 </script>
