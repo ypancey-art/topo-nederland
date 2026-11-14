@@ -1,9 +1,10 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Topo Nederland</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
 <style>
-/* Layout: kaart (zee, provincies in atlaskleuren) met onderaan of rechts een spelpaneel; zoomen en slepen op de kaart. */
+/* Layout: de kaart vult het hele scherm; het menu en de spelbalk zweven er als kaartje overheen. */
 :root {
   --bg: #e9f0f5;
   --panel: #ffffff;
@@ -94,46 +95,43 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { height: 100%; overflow: hidden; }
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--sea);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.4;
-  padding-block: 0;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
-#app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; padding-block: 8px; }
-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-header h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: 0.01em; }
-header span { color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-
-main { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
-@media (min-width: 880px) {
-  main { grid-template-columns: minmax(0, 1fr) 400px; grid-template-rows: minmax(0, 1fr); }
-  .panel { max-height: 100%; }
-}
-
-.mapcard { position: relative; min-height: 200px; min-width: 0; border-radius: 14px; overflow: hidden; background: var(--sea); border: 1px solid var(--line); }
+#app { position: fixed; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; }
+.mapcard { position: absolute; inset: 0; background: var(--sea); }
 svg#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
 svg#map.panning { cursor: grabbing; }
-.zoom { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
-.zoom button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 22px; font-weight: 600; line-height: 1; padding: 0; }
+.zoom { position: absolute; z-index: 1; right: max(8px, env(safe-area-inset-right, 0px)); bottom: max(8px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 6px; }
+.zoom button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 22px; font-weight: 600; line-height: 1; padding: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
 .zoom button:hover { background: var(--soft); }
 
-.panel { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; overflow-y: auto; max-height: 50vh; }
+/* zwevend kaartje: het menu onderaan (telefoon) of rechtsboven (breed scherm), de spelbalk bovenaan */
+.panel { position: absolute; z-index: 2; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; overflow-y: auto; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); }
+#app[data-screen="setup"] .panel, #app[data-screen="result"] .panel { bottom: max(8px, env(safe-area-inset-bottom, 0px)); max-height: 50%; }
+#app[data-screen="play"] .panel, #app[data-screen="explore"] .panel { top: max(8px, env(safe-area-inset-top, 0px)); max-height: 60%; padding: 9px 12px; }
+#app[data-screen="setup"] .zoom, #app[data-screen="result"] .zoom { bottom: auto; top: max(8px, env(safe-area-inset-top, 0px)); }
+@media (min-width: 760px) {
+  #app .panel { width: 360px; left: auto; right: max(12px, env(safe-area-inset-right, 0px)); top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; max-height: calc(100% - 24px); padding: 14px; }
+  #app .zoom { top: auto; right: auto; left: max(12px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+}
 .screen[hidden] { display: none; }
 .label { margin: 0 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .stack { display: grid; gap: 14px; }
 
 .lvl { display: grid; gap: 2px; }
+.brand { margin: 0 0 2px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .lvl h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; }
 .lvl .back { justify-self: start; padding: 2px 0; margin-bottom: 4px; text-decoration: none; font-size: 14px; color: var(--accent); }
 .lvl .back[hidden], #chips-wrap[hidden] { display: none; }
@@ -159,10 +157,14 @@ svg#map.panning { cursor: grabbing; }
 .top { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; color: var(--muted); }
 .bar { flex: 1; height: 8px; background: var(--soft); border-radius: 999px; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width 0.3s; }
-.kind { margin-top: 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mark); }
+.kind { margin-top: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mark); }
 .prompt { font-family: var(--font-display); font-weight: 600; font-size: 30px; line-height: 1.1; text-wrap: balance; overflow-wrap: anywhere; margin: 2px 0 2px; }
 .sub { color: var(--muted); font-size: 14px; margin: 0; }
-.fb { min-height: 44px; margin-top: 8px; font-weight: 700; font-size: 16px; }
+.fb { flex: 1; min-width: 0; font-weight: 700; font-size: 15px; line-height: 1.25; }
+.frow { display: flex; align-items: center; gap: 8px; min-height: 40px; margin-top: 4px; }
+.frow .actions { margin: 0; flex: none; flex-wrap: nowrap; }
+.stop { border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 3px 10px; font-weight: 800; font-size: 12px; color: var(--ink); }
+#s-explore { gap: 8px; }
 .fb.ok { color: var(--ok); }
 .fb.bad { color: var(--bad); }
 .fb.near { color: var(--mark); }
@@ -176,7 +178,8 @@ svg#map.panning { cursor: grabbing; }
 #tform input { flex: 1; min-width: 0; border: 2px solid var(--line); background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 18px; font-weight: 700; }
 #tform input:focus { border-color: var(--accent); outline: none; }
 #tform[hidden] { display: none; }
-.hint { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.08em; color: var(--muted); font-size: 16px; min-height: 22px; margin-top: 6px; overflow-wrap: anywhere; }
+.hint { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.08em; color: var(--muted); font-size: 16px; margin-top: 6px; overflow-wrap: anywhere; }
+.hint:empty { display: none; }
 
 .link { border: 0; background: transparent; color: var(--muted); font-weight: 800; font-size: 13px; text-decoration: underline; padding: 2px 4px; }
 .hist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
@@ -193,15 +196,13 @@ svg#map.panning { cursor: grabbing; }
 .missed li { background: var(--soft); border-radius: 8px; padding: 4px 10px; font-weight: 700; font-size: 14px; }
 .missed li small { color: var(--muted); font-weight: 700; }
 
-.info { border-radius: 12px; background: var(--soft); padding: 12px 14px; min-height: 68px; }
-.info b { font-family: var(--font-display); font-size: 26px; font-weight: 600; display: block; line-height: 1.15; overflow-wrap: anywhere; }
+.info { border-radius: 12px; background: var(--soft); padding: 8px 12px; min-height: 58px; }
+.info b { font-family: var(--font-display); font-size: 22px; font-weight: 600; display: block; line-height: 1.15; overflow-wrap: anywhere; }
 .info span { color: var(--muted); font-size: 13px; font-weight: 700; }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 700; }
 .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 
-@media (max-width: 879px) {
-  header h1 { font-size: 20px; }
-  .panel { padding: 12px; }
+@media (max-width: 759px) {
   .stack { gap: 10px; }
   .lvl h2 { font-size: 22px; }
   .lvl .sub { font-size: 13px; }
@@ -210,15 +211,12 @@ svg#map.panning { cursor: grabbing; }
   .mode svg { width: 22px; height: 22px; }
   .mode b { font-size: 14px; }
   .chip { padding: 5px 10px; font-size: 13px; }
-  .kind { margin-top: 8px; }
-  .prompt { font-size: 24px; }
-  .sub { font-size: 13px; }
-  #tform { margin-top: 8px; }
+  .kind { margin-top: 6px; }
+  .prompt { font-size: 24px; margin: 0; }
+  #s-play .sub { display: none; }
+  #tform { margin-top: 6px; }
   #tform input { font-size: 16px; padding: 8px 10px; }
-  .hint { min-height: 0; }
-  .fb { min-height: 22px; margin-top: 6px; font-size: 15px; }
-  .actions { margin-top: 6px; }
-  .btn { padding: 9px 14px; }
+  .btn { padding: 8px 14px; }
 }
 
 /* ---------- kaart ---------- */
@@ -296,12 +294,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
 }
 </style>
 
-<div id="app">
-  <header>
-    <h1>Topo Nederland</h1>
-    <span>Groep 6</span>
-  </header>
-  <main>
+<div id="app" data-screen="setup">
     <section class="mapcard" id="mapcard" aria-label="Kaart van Nederland">
       <svg id="map" role="img" aria-label="Kaart van Nederland met provincies, hoofdsteden en wateren" preserveAspectRatio="xMidYMid meet" data-hit=""></svg>
       <div class="zoom">
@@ -317,6 +310,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
       <!-- instellen -->
       <div class="screen stack" id="s-setup">
         <div class="lvl">
+          <p class="brand">Topo Nederland &middot; groep 6</p>
           <button type="button" class="link back" id="lback" hidden>&larr; Nederland</button>
           <h2 id="ltitle">Nederland</h2>
           <p class="sub" id="lsub">Tik op een provincie op de kaart om die te openen.</p>
@@ -351,13 +345,13 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
       <!-- leren -->
       <div class="screen stack" id="s-explore" hidden>
         <div class="info" id="xinfo" aria-live="polite"><b>Tik op de kaart</b><span>Je ziet hier hoe het heet.</span></div>
-        <label class="check"><input type="checkbox" id="xlabels"> Alle namen op de kaart tonen</label>
-        <div class="actions" style="margin:0"><button type="button" class="btn" id="xdone">Klaar</button></div>
+        <div class="row"><label class="check"><input type="checkbox" id="xlabels"> Alle namen tonen</label>
+        <button type="button" class="btn" id="xdone">Klaar</button></div>
       </div>
 
       <!-- spelen -->
       <div class="screen" id="s-play" hidden>
-        <div class="top"><span id="pcount">Vraag 1 van 10</span><div class="bar"><i id="pbar"></i></div><span id="pscore">0 goed</span></div>
+        <div class="top"><span id="pcount">Vraag 1 van 10</span><div class="bar"><i id="pbar"></i></div><span id="pscore">0 goed</span><button type="button" class="stop" id="bstop">Stoppen</button></div>
         <div class="kind" id="pkind">Provincie</div>
         <div class="prompt" id="pprompt">Friesland</div>
         <p class="sub" id="psub">Tik op de kaart waar het ligt.</p>
@@ -366,11 +360,12 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
           <button type="submit" class="btn" id="tgo">Controleer</button>
         </form>
         <div class="hint" id="thint" aria-live="polite"></div>
-        <div class="fb" id="pfb" role="status" aria-live="polite"></div>
-        <div class="actions">
-          <button type="button" class="btn" id="bnext" hidden>Volgende</button>
-          <button type="button" class="btn ghost" id="bhint" hidden>Hint</button>
-          <button type="button" class="btn ghost" id="bstop">Stoppen</button>
+        <div class="frow">
+          <div class="fb" id="pfb" role="status" aria-live="polite"></div>
+          <div class="actions">
+            <button type="button" class="btn ghost" id="bhint" hidden>Hint</button>
+            <button type="button" class="btn" id="bnext" hidden>Volgende</button>
+          </div>
         </div>
       </div>
 
@@ -394,7 +389,6 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
         </div>
       </div>
     </section>
-  </main>
 </div>
 
 <script>
@@ -532,31 +526,45 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   /* ---------- zoomen en slepen ---------- */
   var view = { cx: D.W / 2, cy: D.H / 2, z: 1 };
   var ZMAX = 14;
-  function box() { var r = svg.getBoundingClientRect(); return { w: Math.max(r.width, 1), h: Math.max(r.height, 1), l: r.left, t: r.top }; }
-  function base() { var b = box(); return Math.min(b.w / D.W, b.h / D.H) * 0.98; }
+  var inset = { t: 0, r: 0, b: 0, l: 0 };   // deel van de kaart dat onder het zwevende kaartje ligt
+  function calcInset() {
+    var m = $("#mapcard").getBoundingClientRect(), p = $("#panel").getBoundingClientRect();
+    inset = { t: 0, r: 0, b: 0, l: 0 };
+    if (!p.width || !p.height) return;
+    if (p.width > m.width * 0.6) { if (p.top - m.top < m.bottom - p.bottom) inset.t = p.bottom - m.top; else inset.b = m.bottom - p.top; }
+    else if (p.left - m.left < m.right - p.right) inset.l = p.right - m.left; else inset.r = m.right - p.left;
+  }
+  function box() {
+    var r = svg.getBoundingClientRect(), w = Math.max(r.width, 1), h = Math.max(r.height, 1);
+    var fw = Math.max(w - inset.l - inset.r, 60), fh = Math.max(h - inset.t - inset.b, 60);
+    return { w: w, h: h, l: r.left, t: r.top, fw: fw, fh: fh, ox: Math.min(inset.l, w - fw) + fw / 2, oy: Math.min(inset.t, h - fh) + fh / 2 };
+  }
+  function base() { var b = box(); return Math.min(b.fw / D.W, b.fh / D.H) * 0.98; }
   function applyView() {
     var b = box(), s = base() * view.z, vw = b.w / s, vh = b.h / s;
     view.cx = Math.min(Math.max(view.cx, 0), D.W);
     view.cy = Math.min(Math.max(view.cy, 0), D.H);
-    svg.setAttribute("viewBox", (view.cx - vw / 2).toFixed(2) + " " + (view.cy - vh / 2).toFixed(2) + " " + vw.toFixed(2) + " " + vh.toFixed(2));
+    svg.setAttribute("viewBox", (view.cx - b.ox / s).toFixed(2) + " " + (view.cy - b.oy / s).toFixed(2) + " " + vw.toFixed(2) + " " + vh.toFixed(2));
     var u = 1 / s;
     svg.style.setProperty("--u", u.toFixed(4));
     // stippen: in een provincie even groot ten opzichte van de kaart als in het werkboek
     // (gemeten van de werkboekkaart; voor provincies zonder meting dezelfde verhouding tot de kaartbreedte)
-    var rpx = 5.5, vb = level && D.views[level], dr = vb && ((D.dotr && D.dotr[level]) || 0.0088 * Math.max(vb[2], vb[3]));
+    // ze groeien mee met inzoomen, net als de rest van de kaart
+    var rpx = 5.5, bs0 = base(), zfit = 1, vb = level && D.views[level], dr = vb && ((D.dotr && D.dotr[level]) || 0.0088 * Math.max(vb[2], vb[3]));
     if (dr && vb) {
-      var bs0 = base(), zfit = Math.min(ZMAX, Math.max(1, Math.min(b.w / (vb[2] * bs0), b.h / (vb[3] * bs0)) * 0.9));
+      zfit = Math.min(ZMAX, Math.max(1, Math.min(b.fw / (vb[2] * bs0), b.fh / (vb[3] * bs0)) * 0.9));
       rpx = Math.min(12, Math.max(4, dr * bs0 * zfit));
     }
+    var rr = rpx / (bs0 * zfit);   // straal in kaarteenheden: vast op de kaart, dus groter op het scherm bij inzoomen
     DOTS.forEach(function (d) {
-      var sq = d.sq === true || (!!d.sq && d.sq === level), r = rpx * u * (sq ? 1.1 : 1);
+      var sq = d.sq === true || (!!d.sq && d.sq === level), r = rr * (sq ? 1.1 : 1);
       d.vis.setAttribute("x", (d.x - r).toFixed(2)); d.vis.setAttribute("y", (d.y - r).toFixed(2));
       d.vis.setAttribute("width", (2 * r).toFixed(2)); d.vis.setAttribute("height", (2 * r).toFixed(2));
       d.vis.setAttribute("rx", sq ? 0 : r.toFixed(2));
       var lb = LABELS[d.id];   // naam vlak naast de stip, op elk zoomniveau
-      if (lb) { lb.setAttribute("x", (d.x + lb.dataset.dx * (rpx + 4) * u).toFixed(2)); lb.setAttribute("y", (d.y + 4 * u).toFixed(2)); }
-      d.ring.setAttribute("r", (rpx * 1.65 * u).toFixed(2));
-      d.hit.setAttribute("r", (Math.max(22, rpx + 12) * u).toFixed(2));
+      if (lb) { lb.setAttribute("x", (d.x + lb.dataset.dx * (rr + 4 * u)).toFixed(2)); lb.setAttribute("y", (d.y + 4 * u).toFixed(2)); }
+      d.ring.setAttribute("r", (rr * 1.65).toFixed(2));
+      d.hit.setAttribute("r", Math.max(22 * u, rr + 12 * u).toFixed(2));
     });
     var zf = Math.pow(view.z, 0.6);
     STROKES.forEach(function (o) { o.e.setAttribute("stroke-width", (o.w / zf).toFixed(3)); });
@@ -564,20 +572,20 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
   function resetView() { view.cx = D.W / 2; view.cy = D.H / 2; view.z = 1; applyView(); }
   function fitBox(bx) {
     var b = box(), bs = base();
-    view.z = Math.min(ZMAX, Math.max(1, Math.min(b.w / (bx[2] * bs), b.h / (bx[3] * bs)) * 0.9));
+    view.z = Math.min(ZMAX, Math.max(1, Math.min(b.fw / (bx[2] * bs), b.fh / (bx[3] * bs)) * 0.9));
     view.cx = bx[0] + bx[2] / 2; view.cy = bx[1] + bx[3] / 2;
     applyView();
   }
   function zoomAt(px, py, f) {
     var b = box(), s0 = base() * view.z;
-    var sx = px - b.l - b.w / 2, sy = py - b.t - b.h / 2;
+    var sx = px - b.l - b.ox, sy = py - b.t - b.oy;
     var wx = view.cx + sx / s0, wy = view.cy + sy / s0;
     view.z = Math.min(ZMAX, Math.max(1, view.z * f));
     var s1 = base() * view.z;
     view.cx = wx - sx / s1; view.cy = wy - sy / s1;
     applyView();
   }
-  function zoomCenter(f) { var b = box(); zoomAt(b.l + b.w / 2, b.t + b.h / 2, f); }
+  function zoomCenter(f) { var b = box(); zoomAt(b.l + b.ox, b.t + b.oy, f); }
   $("#zin").onclick = function () { zoomCenter(1.6); };
   $("#zout").onclick = function () { zoomCenter(1 / 1.6); };
   $("#zreset").onclick = resetView;
@@ -635,7 +643,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     var n = NODE[id], bb;
     try { bb = n.getBBox(); } catch (err) { return; }
     var b = box(), s = base() * view.z;
-    var mx = b.w / s * 0.42, my = b.h / s * 0.42; // ~8% rand
+    var mx = b.fw / s * 0.42, my = b.fh / s * 0.42; // ~8% rand
     // het punt van het doel dat het dichtst bij het midden ligt; staat dat al in beeld, dan niets verschuiven
     var px = Math.min(Math.max(view.cx, bb.x), bb.x + bb.width);
     var py = Math.min(Math.max(view.cy, bb.y), bb.y + bb.height);
@@ -658,8 +666,12 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
       panAnim = k < 1 ? requestAnimationFrame(step) : null;
     })(t0);
   }
-  window.addEventListener("resize", applyView);
-  if (window.ResizeObserver) new ResizeObserver(applyView).observe($("#mapcard"));
+  function relayout() { calcInset(); applyView(); }
+  window.addEventListener("resize", relayout);
+  if (window.ResizeObserver) new ResizeObserver(relayout).observe($("#mapcard"));
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", function () {   // toetsenbord open: kaart krimpt mee
+    $("#app").style.height = window.visualViewport.height + "px";
+  });
 
   /* ---------- opslag van resultaten ---------- */
   var mem = {};
@@ -781,7 +793,7 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
 
   /* ---------- schermen ---------- */
   var screens = ["setup", "explore", "play", "result"];
-  function show(name) { screens.forEach(function (s) { $("#s-" + s).hidden = s !== name; }); $("#panel").scrollTop = 0; }
+  function show(name) { screens.forEach(function (s) { $("#s-" + s).hidden = s !== name; }); $("#app").setAttribute("data-screen", name); $("#panel").scrollTop = 0; calcInset(); }
 
   var sel = { prov: true, cap: false, water: false, lake: false, randstad: false, gld: false, zh: false, fl: false, ov: false, dr: false, fr: false, gr: false, nb: false, nh: false, zl: false, lb: false, ut: false };
   var chipsEl = $("#chips");
@@ -822,6 +834,15 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     $("#lback").hidden = !level;
     $("#chips-wrap").hidden = !!level;
     if (level) {
+      var t0 = TOPICS.filter(function (u) { return u.id === level; })[0];
+      $("#ltitle").textContent = t0.label;
+      $("#lsub").textContent = ITEMS.filter(function (i) { return i.topics.indexOf(level) >= 0; }).length + " plaatsen, gebieden en wateren. Kies hieronder een spel.";
+    } else {
+      $("#ltitle").textContent = "Nederland";
+      $("#lsub").textContent = "Tik op een provincie op de kaart om die te openen.";
+    }
+    show("setup");
+    if (level) {
       var t = TOPICS.filter(function (u) { return u.id === level; })[0];
       var n = ITEMS.filter(function (i) { return i.topics.indexOf(level) >= 0; }).length;
       $("#ltitle").textContent = t.label;
@@ -844,7 +865,6 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
       t.setAttribute("text-anchor", (l2 === "w" || l2 === "end") ? "end" : ((l2 === "e" || l2 === "start") ? "start" : "middle"));
     });
     updateModes();
-    show("setup");
   }
   function openProvince(tid) { level = tid; setSel(tid); enterSetup(); }
   function openNL() { level = null; setSel(nlTopic); enterSetup(); }
@@ -927,9 +947,11 @@ svg[data-hit~="area"] .k-area { pointer-events: all; cursor: pointer; }
     S = { mode: mode, queue: queue, i: 0, good: 0, missed: [], cur: null, done: false, tries: 0, fromFix: !!items };
     labelsOn = false;
     setAreasExplore({});
-    show("play");
     $("#tform").hidden = mode !== "type";
     $("#bhint").hidden = mode !== "type";
+    $("#bnext").hidden = true; $("#pfb").textContent = ""; $("#thint").textContent = "";
+    $("#pprompt").textContent = mode === "type" ? "Hoe heet dit?" : "\u00a0";
+    show("play");
     fitForTopics();
     next();
   }
